@@ -387,13 +387,13 @@ html<!DOCTYPE html>
     setSaveStatus('');
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('https://training-log-proxy.danblanchard1313.workers.dev', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-allow-browser': 'true'
+          
+          : 'true'
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
@@ -518,13 +518,13 @@ Return ONLY valid JSON, no markdown, no explanation. If date unclear use ${new D
     try {
       const rows = buildRows(parsed);
       // Write to sheet using Anthropic API with Google Sheets MCP
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('https://training-log-proxy.danblanchard1313.workers.dev', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-allow-browser': 'true'
+         
+          : 'true'
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
