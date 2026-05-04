@@ -1,0 +1,574 @@
+html<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training Log</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --border2: #3a3a3a;
+    --text: #e8e8e8;
+    --text2: #888;
+    --text3: #555;
+    --accent: #c8f060;
+    --accent-dim: rgba(200,240,96,0.12);
+    --red: #ff5f5f;
+    --red-dim: rgba(255,95,95,0.12);
+    --blue: #60b8f0;
+    --blue-dim: rgba(96,184,240,0.12);
+    --amber: #f0c060;
+    --amber-dim: rgba(240,192,96,0.12);
+    --green: #60f0a0;
+    --green-dim: rgba(96,240,160,0.12);
+    --radius: 10px;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+  }
+  .container { max-width: 780px; margin: 0 auto; }
+  .header { margin-bottom: 32px; }
+  .header h1 {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .header p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .btn-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+  .btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: 0.5px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+  }
+  .btn:hover { background: #2a2a2a; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .btn-speak {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-size: 15px;
+    padding: 14px 28px;
+    min-width: 140px;
+  }
+  .btn-speak:hover { background: rgba(200,240,96,0.2); }
+  .btn-speak.recording {
+    background: var(--red-dim);
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .btn-parse {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .mic-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .mic-dot.pulse { animation: pulse 1s ease infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.15} }
+  .status {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: var(--surface2);
+    color: var(--text2);
+    border: 0.5px solid var(--border);
+  }
+  .status.listening { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+  .status.ok { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .status.err { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+  .transcript-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  #transcript {
+    width: 100%;
+    min-height: 100px;
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: var(--sans);
+    font-size: 15px;
+    color: var(--text);
+    resize: vertical;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  #transcript:focus { outline: none; border-color: var(--border2); }
+  #transcript::placeholder { color: var(--text3); }
+  .parsed-section {
+    display: none;
+    margin-top: 16px;
+  }
+  .parsed-section.visible { display: block; }
+  .parsed-date {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 4px;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--text3);
+    display: inline-block;
+  }
+  .edit-hint { font-size: 12px; color: var(--text3); font-style: italic; margin-bottom: 14px; margin-top: 4px; }
+  .ex-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
+  .ex-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 6px 10px 10px 0;
+    border-bottom: 0.5px solid var(--border);
+    font-weight: 400;
+  }
+  .ex-table td {
+    padding: 10px 10px 10px 0;
+    border-bottom: 0.5px solid var(--border2);
+    vertical-align: middle;
+  }
+  .ex-table tr:last-child td { border-bottom: none; }
+  .editable {
+    display: inline-block;
+    min-width: 32px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    cursor: text;
+    border: 0.5px solid transparent;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    transition: all 0.12s;
+  }
+  .editable:hover { background: var(--surface2); border-color: var(--border); }
+  .editable:focus { outline: none; background: var(--surface2); border-color: var(--border2); }
+  .editable.name-cell { font-family: var(--sans); font-size: 14px; font-weight: 500; color: var(--text); min-width: 120px; }
+  .editable.nil { color: var(--text3); }
+  .type-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-block;
+  }
+  .type-lift { border: 0.5px solid var(--blue); color: var(--blue); background: var(--blue-dim); }
+  .type-walk { border: 0.5px solid var(--amber); color: var(--amber); background: var(--amber-dim); }
+  .type-run { border: 0.5px solid var(--green); color: var(--green); background: var(--green-dim); }
+  .tonnage-val { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+  .confirm-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn-confirm {
+    background: var(--green-dim);
+    border-color: var(--green);
+    color: var(--green);
+    font-weight: 500;
+  }
+  .btn-confirm:hover { background: rgba(96,240,160,0.2); }
+  .btn-discard { color: var(--text3); border-color: var(--border); }
+  .save-status {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 12px;
+    font-family: var(--mono);
+    min-height: 20px;
+  }
+  .save-status.ok { color: var(--green); }
+  .save-status.err { color: var(--red); }
+  .log-section { margin-top: 32px; }
+  .log-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+  .log-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--border2);
+    font-size: 13px;
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-date { font-family: var(--mono); color: var(--accent); font-size: 11px; }
+  .log-meta { color: var(--text2); font-size: 12px; }
+  .empty { font-size: 13px; color: var(--text3); padding: 8px 0; }
+  .spinner {
+    width: 12px; height: 12px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .date-input {
+    font-family: var(--mono);
+    font-size: 14px;
+    background: var(--surface2);
+    border: 0.5px solid var(--accent);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 4px 8px;
+  }
+  .date-input:focus { outline: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Training Log</h1>
+    <p>Speak your session → Parse → Edit if needed → Confirm saves to Google Sheet.</p>
+  </div>
+
+  <div class="card">
+    <div class="btn-row">
+      <button class="btn btn-speak" id="mic-btn">
+        <span class="mic-dot" id="mic-dot"></span> Speak
+      </button>
+      <button class="btn btn-parse" id="parse-btn">Parse entry</button>
+      <span class="status" id="status">Ready</span>
+    </div>
+    <div class="transcript-label">Transcript</div>
+    <textarea id="transcript" placeholder='Speak or type — e.g. "April 30 2026 — walked Hills 3 and 4, easy effort, 37 minutes"'></textarea>
+
+    <div class="parsed-section" id="parsed-section">
+      <div class="parsed-date" id="parsed-date"></div>
+      <div class="edit-hint">Click any cell to edit before confirming.</div>
+      <table class="ex-table" id="ex-table">
+        <thead><tr id="table-headers"></tr></thead>
+        <tbody id="ex-body"></tbody>
+      </table>
+      <div class="confirm-row">
+        <button class="btn btn-confirm" id="confirm-btn">Confirm — save to sheet</button>
+        <button class="btn btn-discard" id="discard-btn">Discard</button>
+      </div>
+      <div class="save-status" id="save-status"></div>
+    </div>
+  </div>
+
+  <div class="log-section">
+    <div class="log-label">Saved this session</div>
+    <div id="log"><div class="empty">Nothing saved yet.</div></div>
+  </div>
+</div>
+
+<script>
+  const API_KEY = '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';
+  const SHEET_ID = '18GuyXe5IsCps3PJSVPGVfTIU0IIKaQLGTDvKBTXpd2Y';
+
+  let parsed = null;
+  let recognition = null;
+  let isRecording = false;
+  let finalTranscript = '';
+
+  const micBtn = document.getElementById('mic-btn');
+  const parseBtn = document.getElementById('parse-btn');
+  const statusEl = document.getElementById('status');
+  const transcriptEl = document.getElementById('transcript');
+  const parsedSection = document.getElementById('parsed-section');
+  const parsedDateEl = document.getElementById('parsed-date');
+  const tableHeaders = document.getElementById('table-headers');
+  const exBody = document.getElementById('ex-body');
+  const confirmBtn = document.getElementById('confirm-btn');
+  const discardBtn = document.getElementById('discard-btn');
+  const saveStatus = document.getElementById('save-status');
+  const log = document.getElementById('log');
+
+  function setStatus(text, cls) {
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  function setSaveStatus(text, cls) {
+    saveStatus.textContent = text;
+    saveStatus.className = 'save-status' + (cls ? ' ' + cls : '');
+  }
+
+  // Speech recognition
+  const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SRClass) {
+    recognition = new SRClass();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.onstart = () => setStatus('Listening…', 'listening');
+    recognition.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + ' ';
+        else interim += e.results[i][0].transcript;
+      }
+      transcriptEl.value = finalTranscript + interim;
+    };
+    recognition.onerror = (e) => { setStatus('Mic error: ' + e.error, 'err'); stopRecording(); };
+    recognition.onend = () => { if (isRecording) { try { recognition.start(); } catch(e) {} } };
+  } else {
+    micBtn.disabled = true;
+    setStatus('Voice not supported', 'err');
+  }
+
+  function startRecording() {
+    if (!recognition) return;
+    isRecording = true;
+    finalTranscript = transcriptEl.value.trim() ? transcriptEl.value.trim() + ' ' : '';
+    try { recognition.start(); } catch(e) { setStatus('Mic failed', 'err'); isRecording = false; return; }
+    micBtn.classList.add('recording');
+    micBtn.innerHTML = '<span class="mic-dot pulse"></span> Stop';
+  }
+
+  function stopRecording() {
+    isRecording = false;
+    if (recognition) { try { recognition.stop(); } catch(e) {} }
+    micBtn.classList.remove('recording');
+    micBtn.innerHTML = '<span class="mic-dot"></span> Speak';
+    setStatus('Ready');
+  }
+
+  micBtn.onclick = () => { if (isRecording) stopRecording(); else startRecording(); };
+
+  // Parse
+  parseBtn.onclick = async () => {
+    const input = transcriptEl.value.trim();
+    if (!input) { setStatus('Nothing to parse', 'err'); return; }
+    parseBtn.disabled = true;
+    statusEl.innerHTML = '<span class="spinner"></span> Parsing…';
+    statusEl.className = 'status';
+    parsedSection.classList.remove('visible');
+    setSaveStatus('');
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-allow-browser': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-opus-4-6',
+          max_tokens: 1000,
+          system: `You are a training log parser. The user logs gym workouts (lifting) and cardio (walking or running).
+
+For CARDIO entries return:
+{"date":"YYYY-MM-DD","type":"cardio","exercise":"Walk" or "Run","course":"exact route name as spoken","minutes":number,"effort":"easy" or "hard"}
+
+For LIFTING entries return an array:
+{"date":"YYYY-MM-DD","type":"lifting","exercises":[{"name":"exercise name","sets":number,"reps":number,"weight_lbs":number}]}
+
+Return ONLY valid JSON, no markdown, no explanation. If date unclear use ${new Date().toISOString().split('T')[0]}.`,
+          messages: [{ role: 'user', content: input }]
+        })
+      });
+      if (!res.ok) throw new Error('API ' + res.status);
+      const data = await res.json();
+      const raw = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+      parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      renderParsed();
+      setStatus('Parsed — edit if needed', 'ok');
+    } catch(e) {
+      setStatus('Parse failed: ' + e.message, 'err');
+      console.error(e);
+    }
+    parseBtn.disabled = false;
+  };
+
+  function fmtDate(d) {
+    if (!d) return '—';
+    try { return new Date(d + 'T12:00:00').toLocaleDateString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
+    catch(e) { return d; }
+  }
+
+  function renderParsed() {
+    parsedDateEl.textContent = fmtDate(parsed.date);
+    parsedDateEl.onclick = () => {
+      const inp = document.createElement('input');
+      inp.type = 'date'; inp.value = parsed.date; inp.className = 'date-input';
+      parsedDateEl.replaceWith(inp); inp.focus();
+      const done = () => { if (inp.value) parsed.date = inp.value; parsedDateEl.textContent = fmtDate(parsed.date); inp.replaceWith(parsedDateEl); };
+      inp.onblur = done; inp.onkeydown = e => { if (e.key === 'Enter') done(); };
+    };
+
+    tableHeaders.innerHTML = '';
+    exBody.innerHTML = '';
+
+    if (parsed.type === 'cardio') {
+      ['Exercise','Course','Minutes','Effort'].forEach(h => {
+        const th = document.createElement('th'); th.textContent = h; tableHeaders.appendChild(th);
+      });
+      const tr = document.createElement('tr');
+      tr.appendChild(makeEditableTd(parsed, 'exercise', false, 'name-cell'));
+      tr.appendChild(makeEditableTd(parsed, 'course', false));
+      tr.appendChild(makeEditableTd(parsed, 'minutes', true));
+      tr.appendChild(makeEffortTd(parsed));
+      exBody.appendChild(tr);
+    } else {
+      ['Exercise','Sets','Reps','Weight (lbs)','Tonnage'].forEach(h => {
+        const th = document.createElement('th'); th.textContent = h; tableHeaders.appendChild(th);
+      });
+      parsed.exercises.forEach(ex => {
+        const tr = document.createElement('tr');
+        tr.appendChild(makeEditableTd(ex, 'name', false, 'name-cell'));
+        tr.appendChild(makeEditableTd(ex, 'sets', true));
+        tr.appendChild(makeEditableTd(ex, 'reps', true));
+        tr.appendChild(makeEditableTd(ex, 'weight_lbs', true));
+        const tonnTd = document.createElement('td');
+        tonnTd.className = 'tonnage-val';
+        tonnTd.setAttribute('data-tonnage', '');
+        updateTonnage(tr, ex, tonnTd);
+        tr.appendChild(tonnTd);
+        exBody.appendChild(tr);
+      });
+    }
+
+    parsedSection.classList.add('visible');
+  }
+
+  function makeEditableTd(obj, field, isNum, extraClass) {
+    const td = document.createElement('td');
+    const span = document.createElement('span');
+    span.className = 'editable' + (extraClass ? ' ' + extraClass : '');
+    const val = obj[field];
+    span.textContent = (val === null || val === undefined || val === '') ? '—' : val;
+    if (!val && val !== 0) span.classList.add('nil');
+    span.contentEditable = true; span.spellcheck = false;
+    span.oninput = () => {
+      const v = span.textContent.trim();
+      if (v === '—' || v === '') { obj[field] = null; span.classList.add('nil'); }
+      else { span.classList.remove('nil'); obj[field] = isNum ? (parseFloat(v) || null) : v; }
+      const tr = td.closest('tr'); if (tr) updateTonnage(tr, obj);
+    };
+    td.appendChild(span); return td;
+  }
+
+  function makeEffortTd(obj) {
+    const td = document.createElement('td');
+    const sel = document.createElement('select');
+    sel.style.cssText = 'font-family:var(--mono);font-size:12px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;cursor:pointer;';
+    ['easy','hard'].forEach(v => {
+      const o = document.createElement('option'); o.value = v; o.textContent = v;
+      if (v === obj.effort) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => { obj.effort = sel.value; };
+    td.appendChild(sel); return td;
+  }
+
+  function updateTonnage(tr, ex, forceTd) {
+    const td = forceTd || tr.querySelector('[data-tonnage]'); if (!td) return;
+    td.textContent = (ex.sets && ex.reps && ex.weight_lbs) ? (ex.sets * ex.reps * ex.weight_lbs).toLocaleString() + ' lbs' : '—';
+  }
+
+  // Confirm & save to sheet via Apps Script
+  confirmBtn.onclick = async () => {
+    if (!parsed) return;
+    confirmBtn.disabled = true;
+    setSaveStatus('Saving…');
+
+    try {
+      const rows = buildRows(parsed);
+      // Write to sheet using Anthropic API with Google Sheets MCP
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-allow-browser': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-opus-4-6',
+          max_tokens: 1000,
+          system: `Append these rows to Google Sheet ID ${SHEET_ID}, Sheet1. The sheet has headers in row 1: Date, Exercise, Course, Minutes, Effort, Sets, Reps, Weight (lbs), Tonnage. Append after the last row of data. Return only "done" when complete.`,
+          messages: [{ role: 'user', content: 'Append these rows: ' + JSON.stringify(rows) }],
+          mcp_servers: [{ type: 'url', url: 'https://sheets.googleapis.com/mcp/v1', name: 'google-sheets' }]
+        })
+      });
+      if (!res.ok) throw new Error('Save API error ' + res.status);
+      setSaveStatus('✓ Saved to sheet', 'ok');
+      addToLog(parsed);
+      parsed = null;
+      transcriptEl.value = '';
+      finalTranscript = '';
+      parsedSection.classList.remove('visible');
+      setStatus('Ready');
+    } catch(e) {
+      setSaveStatus('Save failed: ' + e.message, 'err');
+      console.error(e);
+    }
+    confirmBtn.disabled = false;
+  };
+
+  function buildRows(p) {
+    if (p.type === 'cardio') {
+      return [[p.date, p.exercise, p.course, p.minutes, p.effort, '', '', '', '']];
+    } else {
+      return p.exercises.map(ex => {
+        const t = (ex.sets && ex.reps && ex.weight_lbs) ? ex.sets * ex.reps * ex.weight_lbs : '';
+        return [p.date, ex.name, '', '', '', ex.sets || '', ex.reps || '', ex.weight_lbs || '', t];
+      });
+    }
+  }
+
+  function addToLog(p) {
+    const date = fmtDate(p.date);
+    const summary = p.type === 'cardio' ? `${p.exercise} — ${p.course} — ${p.minutes} min (${p.effort})` : `${p.exercises.length} lift${p.exercises.length > 1 ? 's' : ''}`;
+    const row = document.createElement('div');
+    row.className = 'log-row';
+    row.innerHTML = `<span class="log-date">${date}</span><span class="log-meta">${summary}</span>`;
+    if (log.querySelector('.empty')) log.innerHTML = '';
+    log.insertBefore(row, log.firstChild);
+  }
+</script>
+</body>
+</html>
