@@ -396,7 +396,7 @@ html<!DOCTYPE html>
           'anthropic-dangerous-allow-browser': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-opus-4-6',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
           system: `You are a training log parser. The user logs gym workouts (lifting) and cardio (walking or running).
 
@@ -527,7 +527,7 @@ Return ONLY valid JSON, no markdown, no explanation. If date unclear use ${new D
           'anthropic-dangerous-allow-browser': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-opus-4-6',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
           system: `Append these rows to Google Sheet ID ${SHEET_ID}, Sheet1. The sheet has headers in row 1: Date, Exercise, Course, Minutes, Effort, Sets, Reps, Weight (lbs), Tonnage. Append after the last row of data. Return only "done" when complete.`,
           messages: [{ role: 'user', content: 'Append these rows: ' + JSON.stringify(rows) }],
